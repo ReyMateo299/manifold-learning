@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manifold learning, unrolled</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a patient tutor at a lab bench: plain words, one idea at a time, the reader's hands on the controls.
+   IDEA: a sheet of paper rolled up, and every algorithm is a different way of unrolling it without tearing.
+   PICTURE: a live Swiss roll you unroll yourself; every later figure is the same roll, treated by one method.
+   COLOUR and TYPE: transit green ground for the hero, white below; lime-white highlights, coral for errors. Inter Tight + Inter.
+   LAYOUT: one lesson per band: guide column on the left with steps to try, live figures on the right; stacks under 980px. */
+:root{color-scheme:light;--bg:#ffffff;--ink:#10221f;--muted:#4b605b;--line:#d3dfda;--soft:#f0f6f3;--hero:#00463c;--heroink:#ffffff;--lime:#e6f5c8;--coral:#ff6f59;--coralt:#c43a22;--path:#0b7a62;--focus:#ff6f59}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){color-scheme:dark;--bg:#061c18;--ink:#e6f1ed;--muted:#9fb7b0;--line:#21413a;--soft:#0b2a24;--hero:#00463c;--coralt:#ff8a75;--path:#6fe0bf}}
+:root[data-theme=dark]{color-scheme:dark;--bg:#061c18;--ink:#e6f1ed;--muted:#9fb7b0;--line:#21413a;--soft:#0b2a24;--hero:#00463c;--coralt:#ff8a75;--path:#6fe0bf}
+*{box-sizing:border-box;min-width:0}
+html{scroll-padding-top:72px}
+body{margin:0;background:var(--bg);color:var(--ink);font:16.5px/1.6 Inter,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:"Inter Tight",Inter,sans-serif;font-weight:700;line-height:1.08;text-wrap:balance;margin:0}
+h1{font-size:clamp(34px,5.2vw,54px);letter-spacing:-.02em}
+h2{font-size:clamp(28px,3.4vw,40px);letter-spacing:-.015em}
+h3{font-size:19px;line-height:1.25;margin:26px 0 8px}
+p{margin:0 0 14px;max-width:68ch}
+a{color:var(--path)}
+.band{padding:clamp(28px,4.5vw,64px) max(5vw,16px)}
+.wrap{max-width:1240px;margin:0 auto}
+.hero{background:var(--hero);color:var(--heroink)}
+.hero .wrap{display:grid;gap:28px}
+.hero p{color:#d9ece5;font-size:18px}
+.herotext{max-width:520px}
+
+.herofig{position:relative;height:clamp(320px,80vw,460px);border-radius:14px;background:radial-gradient(120% 90% at 50% 40%,#0a5a4d 0%,#00463c 70%)}
+.herofig canvas{position:absolute;inset:0;width:100%;height:100%;cursor:grab;touch-action:pan-y}
+.heroctl{display:grid;gap:10px;grid-template-columns:minmax(0,1fr);align-items:center}
+.heroctl label{font-weight:600;color:#fff}
+.hero .note{font-size:15px;color:#bfdcd2;margin:0}
+@media(min-width:900px){.hero .wrap{position:relative;display:block}.herotext{position:absolute;left:0;top:0;z-index:1;max-width:440px;pointer-events:none}.herofig{height:clamp(580px,78vh,700px);background:radial-gradient(70% 90% at 64% 45%,#0a5a4d 0%,#00463c 70%)}.heroctl{position:absolute;left:0;bottom:0;z-index:1;max-width:400px}}
+@media(min-width:900px) and (max-width:1150px){.herotext{max-width:360px}.herotext h1{font-size:40px}}
+nav.scroll{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);display:flex;gap:4px;padding:6px max(5vw,16px);white-space:nowrap}
+nav.scroll a{flex:none;padding:10px 12px;border-radius:8px;color:var(--ink);text-decoration:none;font-weight:500;font-size:15px}
+nav.scroll a:hover{background:var(--soft)}
+nav.scroll a span{color:var(--muted);margin-right:6px}
+@media(max-width:900px){nav.scroll{position:static}}
+.scroll{overflow-x:auto}
+.lesson{border-top:1px solid var(--line)}
+.lesson .wrap{display:grid;gap:28px 48px}
+@media(min-width:980px){.lesson .wrap{grid-template-columns:minmax(0,360px) minmax(0,1fr)}.lesson .full{grid-column:1/-1}}
+.num{display:block;font:600 15px Inter,sans-serif;color:var(--path);margin-bottom:10px}
+.guide p{font-size:16px}
+.try{background:var(--soft);border-radius:12px;padding:16px 18px 6px;margin:18px 0}
+.try h3{margin:0 0 8px;font-size:17px}
+.try ol{margin:0;padding-left:20px}
+.try li{margin-bottom:10px;font-size:15.5px}
+.figs{display:grid;gap:14px;align-content:start}
+.pair{display:grid;gap:14px}
+@media(min-width:700px){.pair{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+figure{margin:0}
+.fig{position:relative;height:clamp(280px,36vw,400px);border:1px solid var(--line);border-radius:12px;background:var(--bg);overflow:hidden}
+.fig canvas,.fig svg{position:absolute;inset:0;width:100%;height:100%;touch-action:pan-y}
+#cv2a{touch-action:none}
+.fig canvas{cursor:grab}
+.fig canvas.flat{cursor:crosshair}
+.fig .tag{position:absolute;left:12px;top:10px;font-size:13.5px;font-weight:600;color:var(--muted);pointer-events:none;background:color-mix(in srgb,var(--bg) 80%,transparent);padding:2px 6px;border-radius:6px}
+.fig .busy{position:absolute;right:12px;top:10px;font-size:13.5px;color:var(--muted);display:none}
+.fig.working .busy{display:block}
+figcaption{font-size:14px;color:var(--muted);margin-top:6px}
+.live{border-left:4px solid var(--path);padding:10px 14px;background:var(--soft);border-radius:0 10px 10px 0;font-size:15.5px;min-height:3.2em}
+.live.warn{border-color:var(--coral)}
+.ctl{display:grid;gap:10px 22px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));align-items:end}
+.ctl label{display:block;font-size:14.5px;font-weight:600}
+.ctl button{justify-self:start}
+.ctl output{font-weight:500;color:var(--muted);margin-left:6px;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;height:36px;accent-color:var(--path);margin:0}
+.hero input[type=range]{accent-color:var(--lime)}
+select{font:inherit;font-size:16px;min-height:44px;padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:100%}
+button{font:600 15px Inter,sans-serif;min-height:44px;padding:8px 16px;border-radius:999px;border:1.5px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer}
+button.primary{background:var(--ink);color:var(--bg)}
+button:hover{background:var(--soft)}button.primary:hover{opacity:.88;background:var(--ink)}
+.chk{display:flex;gap:10px;align-items:center;min-height:44px;font-size:15px;font-weight:500}
+.chk input{width:20px;height:20px;accent-color:var(--path)}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.btns{display:flex;flex-wrap:wrap;gap:10px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stat{border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.stat b{display:block;font:700 22px "Inter Tight",sans-serif;font-variant-numeric:tabular-nums}
+.stat span{font-size:13.5px;color:var(--muted)}
+.bars{display:grid;gap:6px}
+.bar{display:grid;grid-template-columns:7.5em minmax(0,1fr) 4.8em;gap:10px;align-items:center;font-size:14px}
+.bar i{display:block;height:14px;border-radius:3px;background:var(--path)}
+.bar i.neg{background:var(--coral)}
+.bars.tight{gap:2px}.bars.tight .bar{font-size:13px}.bars.tight .bar i{height:9px}
+.bar em{font-style:normal;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.eq{font-family:"Inter Tight",serif;font-size:18px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;margin:0 0 14px;overflow-x:auto;white-space:nowrap}
+.eq i{font-family:Georgia,serif}
+.steps{padding-left:22px;margin:0 0 14px}.steps li{margin-bottom:8px}
+details{border-top:1px solid var(--line);padding:10px 0}
+details:last-of-type{border-bottom:1px solid var(--line)}
+summary{cursor:pointer;font-weight:600;min-height:28px}
+details p{margin:8px 0 0}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13.5px;color:var(--muted)}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--c);margin-right:6px;vertical-align:-1px}
+.ramp{height:10px;border-radius:5px;background:linear-gradient(90deg,#4f6bed,#1fae8f,#c6cf2e,#ff6f59);max-width:260px}
+.rampl{display:flex;justify-content:space-between;max-width:260px;font-size:13px;color:var(--muted)}
+.hero .rampl{color:#bfdcd2}
+.grid5{display:grid;gap:14px}
+.grid5 .fig{height:250px}
+@media(min-width:520px){.grid5{grid-template-columns:repeat(2,minmax(0,1fr))}.grid5>figure:first-child{grid-column:1/-1}}
+.grid5 figcaption b{color:var(--ink);font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line)}
+th{font-weight:600;font-size:14px;color:var(--muted)}
+td:first-child{font-weight:600;white-space:nowrap}
+.dtab{font-size:12.5px;font-variant-numeric:tabular-nums}.dtab td,.dtab th{padding:4px 6px;text-align:right;font-weight:400;white-space:nowrap}
+footer{border-top:1px solid var(--line);color:var(--muted);font-size:14.5px}
+@media(max-width:600px){table{font-size:13.5px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8em;text-align:start;white-space:normal}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;white-space:normal;color:var(--muted);font-weight:600}.stack td:empty{display:none}.bar{grid-template-columns:5.5em minmax(0,1fr) 4.2em}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+<script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
+</head>
+<body>
+
+<header class="band hero">
+  <div class="wrap">
+    <div class="herotext">
+      <h1>Manifold learning, unrolled</h1>
+      <p style="margin-top:16px">Real data often looks high-dimensional but really lives on a much simpler surface, curled up inside that bigger space. Manifold learning finds the surface and lays it flat. Before any maths, unroll one yourself.</p>
+    </div>
+    <div class="herofig"><canvas id="heroCv" tabindex="0" aria-label="A Swiss roll of points. Drag to turn it; use the slider to unroll it."></canvas></div>
+    <div class="heroctl">
+      <label for="heroU">Unroll the sheet <output id="heroUo">0%</output></label>
+      <input id="heroU" type="range" min="0" max="100" value="0">
+      <div><div class="ramp"></div><div class="rampl"><span>start of the sheet</span><span>end</span></div></div>
+      <p class="note">Drag the picture to turn it. Each point keeps its colour, which marks where it sits along the sheet. As you unroll, no point gets closer to or further from its neighbours along the paper. That distance-keeping flattening is an <b>isometry</b>, and it's what every method below tries to find from the points alone.</p>
+    </div>
+  </div>
+</header>
+
+<nav class="scroll" aria-label="Lessons">
+  <a href="#idea"><span>1</span>The idea</a><a href="#mds"><span>2</span>Classical MDS</a><a href="#isomap"><span>3</span>Isomap</a><a href="#lle"><span>4</span>LLE</a><a href="#tsne"><span>5</span>t-SNE</a><a href="#compare"><span>6</span>Side by side</a>
+</nav>
+
+<!-- 1. idea -->
+<section class="band lesson" id="idea"><div class="wrap">
+  <div class="guide">
+    <span class="num">Lesson 1 of 6</span>
+    <h2>Near in space isn't near on the surface</h2>
+    <p style="margin-top:14px">A <b>manifold</b> is a shape that looks flat when you zoom in close enough, the way a field looks flat even though the Earth is round. The Swiss roll is a 2-D sheet sitting in 3-D space: its <b>intrinsic dimension</b> is 2 even though every point has 3 coordinates.</p>
+    <p>The <b>manifold hypothesis</b> says lots of real data works this way. Photos of a face turning have thousands of pixel values, but only a few things actually vary (angle and lighting), so the photos lie near a low-dimensional surface.</p>
+    <p>The catch is distance. The straight line between two points can cut through empty space between layers. What we care about is the <b>geodesic</b>: the shortest route that stays on the surface.</p>
+    <div class="try"><h3>Try this</h3><ol>
+      <li>Press <b>Show me a tricky pair</b>. The two points are close through the air, but on different layers.</li>
+      <li>Compare the dashed straight line with the coral path that crawls around the roll.</li>
+      <li>Turn on <b>Show neighbour graph</b>. The path only ever hops between nearby points. Short hops can't jump between layers, so adding them up follows the surface.</li>
+      <li>Now click two points that are close together on the same layer. Notice that all three distances agree: up close, the roll really is flat.</li>
+    </ol></div>
+  </div>
+  <div class="figs">
+    <figure><div class="fig" id="f1"><canvas id="cv1" tabindex="0" aria-label="Swiss roll; click two points to measure distances between them"></canvas><span class="tag">Click two points. Drag to turn.</span></div></figure>
+    <div class="btns"><button class="primary" id="trick">Show me a tricky pair</button><label class="chk"><input type="checkbox" id="g1"> Show neighbour graph</label></div>
+    <div class="bars" id="d1"></div>
+    <div class="live" id="live1" aria-live="polite"></div>
+    <details><summary>Check yourself: why can't we just measure geodesics directly?</summary><p>We never get the surface, only a cloud of sample points. The geodesic has to be estimated from the samples, and the neighbour-graph path is the simplest way to do it. The quality of that estimate depends on how densely the surface is sampled and on how you choose “neighbours”.</p></details>
+    <details><summary>Check yourself: what does “intrinsic dimension 2” mean for an ant on the roll?</summary><p>The ant can only move in two independent directions: along the roll and across it. Two numbers fully describe where it is, even though an outside observer uses three.</p></details>
+  </div>
+</div></section>
+
+<!-- 2. MDS -->
+<section class="band lesson" id="mds"><div class="wrap">
+  <div class="guide">
+    <span class="num">Lesson 2 of 6</span>
+    <h2>Classical MDS: a map from a table of distances</h2>
+    <p style="margin-top:14px">Suppose all you have is a table of the distances between ten cities, with no coordinates. Can you draw the map? <b>Classical multidimensional scaling</b> (MDS) can, and it's the engine inside Isomap, so it's worth knowing well.</p>
+    <ol class="steps">
+      <li>Square every distance to get the matrix <i>D</i><sup>(2)</sup>.</li>
+      <li>Double-centre it to turn distances into dot products between centred points:</li>
+    </ol>
+    <div class="eq"><i>B</i> = −½ <i>J</i> <i>D</i><sup>(2)</sup> <i>J</i>, &nbsp; <i>J</i> = <i>I</i> − (1/<i>n</i>) <b>1</b><b>1</b><sup>⊤</sup></div>
+    <ol class="steps" start="3">
+      <li>Take the eigenvectors of <i>B</i> with the largest eigenvalues. Each is one axis of the map.</li>
+      <li>Coordinates are <i>Y</i> = <i>V</i><sub>2</sub> Λ<sub>2</sub><sup>½</sup>, the top two eigenvectors scaled by the square roots of their eigenvalues.</li>
+    </ol>
+    <p>The eigenvalues tell you how many dimensions you need. A flat map has two big ones and the rest near zero.</p>
+    <div class="try"><h3>Try this</h3><ol>
+      <li>Drag a city on the left map. The right map is rebuilt from the distance table alone, and it follows.</li>
+      <li>Turn off <b>Line up with my map</b>. The shape is right, but it may be rotated or mirrored. Distances can't tell you which way is north.</li>
+      <li>Raise <b>Measurement error</b>. Now no flat map fits the table exactly: negative eigenvalues appear (coral), and MDS returns the best compromise.</li>
+      <li>Then look at the Swiss roll below. MDS trusts straight-line distances, so it squashes the layers on top of each other.</li>
+    </ol></div>
+  </div>
+  <div class="figs">
+    <div class="pair">
+      <figure><div class="fig"><canvas id="cv2a" class="flat" aria-label="True city map; drag cities"></canvas><span class="tag">Your map: drag a city</span></div></figure>
+      <figure><div class="fig"><canvas id="cv2b" class="flat" aria-label="Map rebuilt by MDS"></canvas><span class="tag">Rebuilt by MDS from distances only</span></div></figure>
+    </div>
+    <div class="ctl">
+      <div><label for="noise2">Measurement error <output id="noise2o">0%</output></label><input type="range" id="noise2" min="0" max="40" value="0"></div>
+      <label class="chk"><input type="checkbox" id="align2" checked> Line up with my map</label>
+      <button id="reset2">Reset cities</button>
+    </div>
+    <div><h3 style="margin-top:4px">Eigenvalues of <i>B</i></h3><div class="bars tight" id="eig2"></div></div>
+    <div class="live" id="live2" aria-live="polite"></div>
+    <details><summary>See the distance table MDS receives (km)</summary><div class="scroll"><table class="dtab" id="dtab"></table></div></details>
+    <div class="pair" style="margin-top:8px">
+      <figure><div class="fig" id="f2c"><canvas id="cv2c" class="flat" aria-label="MDS applied to the Swiss roll"></canvas><span class="tag">MDS on the Swiss roll</span><span class="busy">Working…</span></div></figure>
+      <div><p style="font-size:15.5px">Same algorithm, now fed straight-line distances between points on the roll. If MDS had unrolled it, the colours would run smoothly from blue to coral in one direction. Instead they overlap: blue points from the inner layer land on top of yellow ones from the outer layer, because through the air they really are close.</p><p style="font-size:15.5px">MDS is a <b>linear</b> method. On Euclidean distances it gives the same answer as PCA, so it can rotate and project the data but never bend it. To unroll it, we need distances measured along the sheet. That's lesson 3.</p><div class="ramp"></div><div class="rampl"><span>start of the sheet</span><span>end</span></div></div>
+    </div>
+    <details><summary>Check yourself: why does MDS square the distances first?</summary><p>Squared distances expand into dot products: ‖<i>x</i>−<i>y</i>‖² = <i>x</i>·<i>x</i> + <i>y</i>·<i>y</i> − 2<i>x</i>·<i>y</i>. Double-centring cancels the <i>x</i>·<i>x</i> and <i>y</i>·<i>y</i> parts and leaves the Gram matrix of dot products, which eigendecomposition can factor into coordinates.</p></details>
+    <details><summary>Check yourself: what would three large eigenvalues mean?</summary><p>That no flat map can hold the distances. The points need three dimensions, as cities would if the distances came from a globe at continental scale.</p></details>
+  </div>
+</div></section>
+
+<!-- 3. Isomap -->
+<section class="band lesson" id="isomap"><div class="wrap">
+  <div class="guide">
+    <span class="num">Lesson 3 of 6</span>
+    <h2>Isomap: MDS with distances along the surface</h2>
+    <p style="margin-top:14px">Isomap combines lessons 1 and 2. Swap straight-line distances for estimated geodesics, and MDS will flatten the sheet instead of squashing it.</p>
+    <ol class="steps">
+      <li>Connect each point to its <i>k</i> nearest neighbours, weighting each edge by its length.</li>
+      <li>Find the shortest path through this graph between every pair of points (Dijkstra's algorithm). These are the geodesic estimates.</li>
+      <li>Run classical MDS on that table of path lengths.</li>
+    </ol>
+    <p>Everything hinges on <i>k</i>. Too small and the graph breaks into islands with no paths between them. Too large and an edge jumps between layers. One such <b>short-circuit</b> is enough to collapse the distances and fold the map.</p>
+    <div class="try"><h3>Try this</h3><ol>
+      <li>At <i>k</i> = 8 the colours on the right run smoothly along one axis: the roll is unrolled into a long rectangle.</li>
+      <li>Slide <i>k</i> up slowly past 12. Watch for coral edges on the left, then for the map folding on the right.</li>
+      <li>Slide <i>k</i> down to 3 or 4 and watch for the graph splitting into pieces.</li>
+      <li>Raise <b>Noise</b>. The layers get fuzzier, so short-circuits appear at smaller <i>k</i>. Noise is Isomap's weak spot.</li>
+      <li>Click any point in either view to see it and its neighbours in both.</li>
+    </ol></div>
+  </div>
+  <div class="figs">
+    <div class="pair">
+      <figure><div class="fig" id="f3a"><canvas id="cv3a" tabindex="0" aria-label="Neighbour graph on the Swiss roll"></canvas><span class="tag">Neighbour graph</span><span class="busy">Working…</span></div></figure>
+      <figure><div class="fig" id="f3b"><canvas id="cv3b" class="flat" aria-label="Isomap embedding"></canvas><span class="tag">Isomap's flat map</span><span class="busy">Working…</span></div></figure>
+    </div>
+    <div class="ctl">
+      <div><label for="k3">Neighbours <i>k</i> <output id="k3o">8</output></label><input type="range" id="k3" min="3" max="25" value="8"></div>
+      <div><label for="n3">Noise <output id="n3o">0.2</output></label><input type="range" id="n3" min="0" max="10" value="2"></div>
+    </div>
+    <div class="stats" id="s3"></div>
+    <div class="live" id="live3" aria-live="polite"></div>
+    <details><summary>Check yourself: why does one bad edge do so much damage?</summary><p>Shortest paths reuse it. Every pair of points on the two layers it joins can now take the shortcut, so thousands of distances shrink at once, and MDS faithfully draws those layers on top of each other.</p></details>
+    <details><summary>Check yourself: Isomap preserves global or local structure?</summary><p>Global. It tries to keep every pairwise geodesic distance, so far-apart points stay far apart. That makes it good at the overall shape, and fragile when the graph is wrong.</p></details>
+  </div>
+</div></section>
+
+<!-- 4. LLE -->
+<section class="band lesson" id="lle"><div class="wrap">
+  <div class="guide">
+    <span class="num">Lesson 4 of 6</span>
+    <h2>LLE: describe each point by its neighbours, then keep the description</h2>
+    <p style="margin-top:14px">Locally linear embedding never computes long distances at all. It relies on the idea from lesson 1 that every small patch is nearly flat, so a point can be rebuilt as a weighted mix of its neighbours.</p>
+    <ol class="steps">
+      <li>Find each point's <i>k</i> nearest neighbours.</li>
+      <li>Find the weights that best rebuild each point from its neighbours, with weights summing to 1:</li>
+    </ol>
+    <div class="eq">min<sub><i>W</i></sub> Σ<sub><i>i</i></sub> ‖ <i>x<sub>i</sub></i> − Σ<sub><i>j</i></sub> <i>w<sub>ij</sub></i> <i>x<sub>j</sub></i> ‖²</div>
+    <ol class="steps" start="3">
+      <li>Freeze the weights and find 2-D points <i>y<sub>i</sub></i> that the same recipe rebuilds best. This becomes an eigenvector problem on <i>M</i> = (<i>I</i>−<i>W</i>)<sup>⊤</sup>(<i>I</i>−<i>W</i>). Take the eigenvectors with the smallest non-zero eigenvalues.</li>
+    </ol>
+    <p>The weights don't change if you rotate, scale or shift a patch, so they capture its shape and nothing else. That's why they survive the trip down to 2-D.</p>
+    <div class="try"><h3>Try this</h3><ol>
+      <li>Click any point. The bars show its recipe: how much of each neighbour it takes to rebuild it. The ring in the 3-D view is the rebuilt point.</li>
+      <li>Find the same point on the right: it sits among the same neighbours, mixed by the same recipe.</li>
+      <li>Push <b>Regularisation</b> to the top. Every weight drifts towards 1/<i>k</i>, each point becomes a plain average, and the map loses detail.</li>
+      <li>Raise <i>k</i> past 20. Neighbourhoods get big enough to curve, the "flat patch" assumption breaks, and the map warps.</li>
+    </ol></div>
+  </div>
+  <div class="figs">
+    <div class="pair">
+      <figure><div class="fig" id="f4a"><canvas id="cv4a" tabindex="0" aria-label="Selected point and its neighbours on the roll"></canvas><span class="tag">A point and its neighbours</span><span class="busy">Working…</span></div></figure>
+      <figure><div class="fig" id="f4b"><canvas id="cv4b" class="flat" aria-label="LLE embedding"></canvas><span class="tag">LLE's flat map</span><span class="busy">Working…</span></div></figure>
+    </div>
+    <div class="ctl">
+      <div><label for="k4">Neighbours <i>k</i> <output id="k4o">12</output></label><input type="range" id="k4" min="4" max="30" value="12"></div>
+      <div><label for="r4">Regularisation <output id="r4o">0.001</output></label><input type="range" id="r4" min="-4" max="0" step="0.25" value="-3"></div>
+    </div>
+    <div><h3 style="margin-top:4px" id="w4h">Recipe for the selected point</h3><div class="bars" id="w4"></div></div>
+    <div class="live" id="live4" aria-live="polite"></div>
+    <details><summary>Check yourself: why must the weights sum to 1?</summary><p>So the recipe doesn't depend on where the patch sits. Shift every point by the same amount and a sum-to-one mix shifts with it, so the weights describe shape, not position.</p></details>
+    <details><summary>Check yourself: why throw away the very smallest eigenvector?</summary><p>The constant vector (every <i>y<sub>i</sub></i> equal) rebuilds perfectly and has eigenvalue 0, but it collapses everything to one spot. It carries no information, so LLE uses the next ones.</p></details>
+  </div>
+</div></section>
+
+<!-- 5. t-SNE -->
+<section class="band lesson" id="tsne"><div class="wrap">
+  <div class="guide">
+    <span class="num">Lesson 5 of 6</span>
+    <h2>t-SNE: keep the neighbours, let distances go</h2>
+    <p style="margin-top:14px">t-SNE changes the goal. Instead of preserving distances, it preserves <b>who is near whom</b>, written as probabilities.</p>
+    <ol class="steps">
+      <li>In the original space, each point <i>i</i> picks neighbours with a Gaussian: <i>p</i><sub><i>j</i>|<i>i</i></sub> ∝ exp(−‖<i>x<sub>i</sub></i>−<i>x<sub>j</sub></i>‖² / 2σ<sub><i>i</i></sub>²). Each σ<sub><i>i</i></sub> is tuned so the point has about <b>perplexity</b> effective neighbours.</li>
+      <li>In 2-D, use a heavy-tailed Student-t instead: <i>q<sub>ij</sub></i> ∝ (1 + ‖<i>y<sub>i</sub></i>−<i>y<sub>j</sub></i>‖²)<sup>−1</sup>.</li>
+      <li>Move the 2-D points by gradient descent to make the two match, minimising KL(<i>P</i>‖<i>Q</i>).</li>
+    </ol>
+    <p>KL divergence punishes splitting up true neighbours heavily but barely cares about where far-away points land. So t-SNE is trustworthy about local groups and unreliable about the sizes of clusters and the gaps between them.</p>
+    <div class="try"><h3>Try this</h3><ol>
+      <li>Press <b>Play</b>. For the first 100 steps P is exaggerated ×4, which pulls clusters together fast. Then the map relaxes.</li>
+      <li>Look at cluster C (yellow). In 10-D it's four times as spread out as A, yet on the map it's about the same size. t-SNE evens out density.</li>
+      <li>Set perplexity to 5 and restart: clusters shatter into fragments. Try 60: smoother, more global.</li>
+      <li>Click a point. Rings mark its 10 true nearest neighbours from the original 10-D space. Are they still close?</li>
+      <li>Switch the data to the Swiss roll. t-SNE keeps neighbourhoods but often tears the sheet into strips: great for clusters, not for unrolling.</li>
+    </ol></div>
+  </div>
+  <div class="figs">
+    <figure><div class="fig" id="f5" style="height:clamp(320px,44vw,460px)"><canvas id="cv5" class="flat" aria-label="t-SNE embedding, animating"></canvas><span class="tag">t-SNE map, live</span><span class="busy">Preparing…</span></div></figure>
+    <div class="legend" id="leg5"></div>
+    <div class="ctl">
+      <div><label for="ds5">Data</label><select id="ds5"><option value="clusters">Six clusters in 10-D</option><option value="roll">Swiss roll</option></select></div>
+      <div><label for="p5">Perplexity <output id="p5o">30</output></label><input type="range" id="p5" min="2" max="80" value="30"></div>
+      <div class="btns"><button class="primary" id="play5">Play</button><button id="restart5">Restart</button></div>
+    </div>
+    <div class="stats" id="s5"></div>
+    <div class="live" id="live5" aria-live="polite"></div>
+    <h3>Why a heavy tail? Drag the distance.</h3>
+    <figure><div class="fig" style="height:240px"><svg id="k5" role="img" aria-label="Gaussian versus Student-t similarity curves"></svg></div>
+    <div class="ctl" style="margin-top:8px"><div><label for="d5">Distance between two points <output id="d5o">2.0</output></label><input type="range" id="d5" min="0" max="50" value="20"></div></div>
+    <figcaption id="k5c"></figcaption></figure>
+    <details><summary>Check yourself: is the gap between two t-SNE clusters meaningful?</summary><p>Not much. The heavy tail lets dissimilar points sit far apart without much cost, so gaps get exaggerated and their sizes vary from run to run. Trust which points cluster together; don't measure between clusters.</p></details>
+    <details><summary>Check yourself: what is perplexity, intuitively?</summary><p>A smooth count of neighbours. Perplexity 30 means each point's Gaussian is widened or narrowed until it effectively spreads its attention over about 30 others. Dense regions get small σ, sparse ones big σ.</p></details>
+  </div>
+</div></section>
+
+<!-- 6. compare -->
+<section class="band lesson" id="compare"><div class="wrap">
+  <div class="guide">
+    <span class="num">Lesson 6 of 6</span>
+    <h2>All four on the same data</h2>
+    <p style="margin-top:14px">Now compare. Each map is scored by <b>neighbours kept</b>: for every point, the share of its 10 true nearest neighbours that are also among its 10 nearest on the map. For the roll and the S-curve, "true" means measured along the sheet; for the clusters, in the original 10-D.</p>
+    <div class="try"><h3>Try this</h3><ol>
+      <li>Start with the Swiss roll: MDS overlaps layers, Isomap unrolls best, LLE unrolls with some squeezing, t-SNE keeps patches but tears.</li>
+      <li>Pick the roll with a hole. Isomap has to route its paths around the gap, while LLE never measures across it. Does the hole keep its shape in each map?</li>
+      <li>Pick the clusters. There is no sheet to unroll here, and t-SNE's separation wins.</li>
+      <li>Add noise and run again. Which method degrades most gracefully?</li>
+    </ol></div>
+  </div>
+  <div class="figs">
+    <div class="ctl">
+      <div><label for="ds6">Data</label><select id="ds6"><option value="roll">Swiss roll</option><option value="hole">Swiss roll with a hole</option><option value="s">S-curve</option><option value="clusters">Six clusters in 10-D</option></select></div>
+      <div><label for="n6">Noise <output id="n6o">0.2</output></label><input type="range" id="n6" min="0" max="10" value="2"></div>
+      <div class="btns"><button class="primary" id="run6">Run all four</button></div>
+    </div>
+    <div class="grid5" id="g6"></div>
+  </div>
+  <div class="full">
+    <h3>Which one should I use?</h3>
+    <div class="scroll"><table class="stack">
+      <thead><tr><th>Method</th><th>Distances it trusts</th><th>What it keeps</th><th>Watch out for</th><th>Cost for n points</th></tr></thead>
+      <tbody>
+        <tr><td>Classical MDS</td><td>All pairwise, as given</td><td>Global geometry, if the data is truly flat</td><td>Can't bend: curved manifolds get squashed</td><td>One eigen-solve, n×n</td></tr>
+        <tr><td>Isomap</td><td>Short ones, chained into geodesics</td><td>Global geodesic distances</td><td>Short-circuits from noise or large k; holes and non-convex shapes</td><td>All shortest paths plus an n×n eigen-solve</td></tr>
+        <tr><td>LLE</td><td>Only within each neighbourhood</td><td>Local linear shape of each patch</td><td>Sensitive to k and regularisation; can squeeze or collapse regions</td><td>Small k×k solves plus a sparse eigen-solve</td></tr>
+        <tr><td>t-SNE</td><td>Only within each neighbourhood, softly</td><td>Who is near whom</td><td>Cluster sizes and gaps aren't meaningful; results depend on perplexity and random start</td><td>n² per step (Barnes–Hut makes it n log n)</td></tr>
+      </tbody>
+    </table></div>
+    <h3>Where to go next</h3>
+    <p>UMAP follows t-SNE's neighbour-preserving idea with a different graph construction, and is often faster with a little more global structure. Laplacian eigenmaps and diffusion maps are close cousins of LLE built on the graph Laplacian. For the original papers, see Tenenbaum, de Silva &amp; Langford (2000) for Isomap, Roweis &amp; Saul (2000) for LLE, and <a href="https://www.jmlr.org/papers/v9/vandermaaten08a.html">van der Maaten &amp; Hinton (2008)</a> for t-SNE. <a href="https://distill.pub/2016/misread-tsne/">How to use t-SNE effectively</a> on Distill is the best guide to reading t-SNE plots.</p>
+  </div>
+</div></section>
+
+<footer class="band"><div class="wrap"><p style="margin:0">Every figure runs the real algorithm in your browser on 500 sampled points; nothing is precomputed. City positions in lesson 2 are approximate.</p></div></footer>
+
+<script>
+/* ---------- core math: datasets, eigen-solvers, MDS, Isomap, LLE, t-SNE ---------- */
+const ML = (() => {
+  function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  function gauss(r) { let u = 0, v = 0; while (u === 0) u = r(); v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+  let T0 = 1.5 * Math.PI, T1 = 4 * Math.PI, HW = 15;
+  const arc = t => 0.5 * (t * Math.sqrt(1 + t * t) + Math.asinh(t));
+
+  function swissRoll(n, noise = 0, seed = 7, hole = false) {
+    const r = rng(seed), X = [], c = [], intr = [];
+    while (X.length < n) {
+      const u = r(), v = r();
+      if (hole && u > 0.38 && u < 0.62 && v > 0.33 && v < 0.67) continue;
+      const t = T0 + (T1 - T0) * u, h = HW * v;
+      X.push([t * Math.cos(t) + noise * gauss(r), h + noise * gauss(r), t * Math.sin(t) + noise * gauss(r)]);
+      c.push(u); intr.push([arc(t), h]);
+    }
+    return { X, c, intr, kind: 'continuous', name: hole ? 'Swiss roll with a hole' : 'Swiss roll' };
+  }
+  function sCurve(n, noise = 0, seed = 11) {
+    const r = rng(seed), X = [], c = [], intr = [];
+    for (let i = 0; i < n; i++) {
+      const u = r(), v = r(), t = 3 * Math.PI * (u - 0.5);
+      X.push([6 * Math.sin(t) + noise * gauss(r), 12 * v + noise * gauss(r), 6 * Math.sign(t) * (Math.cos(t) - 1) + noise * gauss(r)]);
+      c.push(u); intr.push([6 * t, 12 * v]);
+    }
+    return { X, c, intr, kind: 'continuous', name: 'S-curve' };
+  }
+  function clusters(n = 500, noise = 0, seed = 5) {
+    const r = rng(seed), D = 10;
+    const sizes = [90, 90, 100, 70, 80, 70], sd = [0.6, 0.6, 2.4, 1.0, 1.0, 1.6];
+    const centers = [];
+    for (let k = 0; k < 6; k++) centers.push(Array.from({ length: D }, () => gauss(r) * 4.5));
+    centers[1] = centers[0].map(v => v + gauss(r) * 0.9); // two near-twins
+    const X = [], c = [], lab = [];
+    sizes.forEach((m, k) => { for (let i = 0; i < m && X.length < n; i++) { X.push(centers[k].map(v => v + (sd[k] + noise) * gauss(r))); lab.push(k); c.push(k); } });
+    return { X, c, intr: X, labels: lab, kind: 'categorical', name: 'Six clusters in 10-D' };
+  }
+
+  function sqdist(X) {
+    const n = X.length, d = X[0].length, D = new Float64Array(n * n);
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+      let s = 0; for (let k = 0; k < d; k++) { const t = X[i][k] - X[j][k]; s += t * t; }
+      D[i * n + j] = D[j * n + i] = s;
+    }
+    return D;
+  }
+  function knn(D, n, k) {
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const idx = []; for (let j = 0; j < n; j++) if (j !== i) idx.push(j);
+      idx.sort((a, b) => D[i * n + a] - D[i * n + b]);
+      out.push(idx.slice(0, k));
+    }
+    return out;
+  }
+
+  /* small symmetric eigen-solver (cyclic Jacobi), ascending */
+  function jacobi(A, n) {
+    const a = Float64Array.from(A), V = new Float64Array(n * n);
+    for (let i = 0; i < n; i++) V[i * n + i] = 1;
+    for (let sweep = 0; sweep < 100; sweep++) {
+      let off = 0; for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) off += a[i * n + j] ** 2;
+      if (off < 1e-22) break;
+      for (let p = 0; p < n; p++) for (let q = p + 1; q < n; q++) {
+        const apq = a[p * n + q]; if (Math.abs(apq) < 1e-300) continue;
+        const th = (a[q * n + q] - a[p * n + p]) / (2 * apq);
+        const t = Math.sign(th || 1) / (Math.abs(th) + Math.sqrt(th * th + 1)), cs = 1 / Math.sqrt(t * t + 1), sn = t * cs;
+        for (let k = 0; k < n; k++) { const akp = a[k * n + p], akq = a[k * n + q]; a[k * n + p] = cs * akp - sn * akq; a[k * n + q] = sn * akp + cs * akq; }
+        for (let k = 0; k < n; k++) { const apk = a[p * n + k], aqk = a[q * n + k]; a[p * n + k] = cs * apk - sn * aqk; a[q * n + k] = sn * apk + cs * aqk; }
+        for (let k = 0; k < n; k++) { const vkp = V[k * n + p], vkq = V[k * n + q]; V[k * n + p] = cs * vkp - sn * vkq; V[k * n + q] = sn * vkp + cs * vkq; }
+      }
+    }
+    const ord = [...Array(n).keys()].sort((i, j) => a[i * n + i] - a[j * n + j]);
+    return { values: ord.map(i => a[i * n + i]), vectors: ord.map(i => Float64Array.from({ length: n }, (_, k) => V[k * n + i])) };
+  }
+  function orthonorm(Q, n) { // Q: array of Float64Array, modified Gram-Schmidt (twice)
+    for (let pass = 0; pass < 2; pass++) for (let a = 0; a < Q.length; a++) {
+      for (let b = 0; b < a; b++) { let s = 0; for (let i = 0; i < n; i++) s += Q[a][i] * Q[b][i]; for (let i = 0; i < n; i++) Q[a][i] -= s * Q[b][i]; }
+      let s = 0; for (let i = 0; i < n; i++) s += Q[a][i] ** 2; s = Math.sqrt(s) || 1; for (let i = 0; i < n; i++) Q[a][i] /= s;
+    }
+  }
+  function matvec(A, n, x, y) { for (let i = 0; i < n; i++) { let s = 0; const o = i * n; for (let j = 0; j < n; j++) s += A[o + j] * x[j]; y[i] = s; } }
+  /* Lanczos with full re-orthogonalisation: top `want` eigenpairs of dense symmetric A */
+  function topEig(A, n, want = 2, ritzKeep = 8) {
+    if (n <= 40) { const e = jacobi(A, n); const v = e.values.slice().reverse(), V = e.vectors.slice().reverse(); return { values: v.slice(0, Math.max(want, ritzKeep)), vectors: V.slice(0, want) }; }
+    const m = Math.min(n, 70), r = rng(3), Q = [], al = [], be = [];
+    let q = Float64Array.from({ length: n }, () => r() - 0.5); orthonorm([q], n);
+    const w = new Float64Array(n);
+    for (let j = 0; j < m; j++) {
+      Q.push(q); matvec(A, n, q, w);
+      let a = 0; for (let i = 0; i < n; i++) a += w[i] * q[i]; al.push(a);
+      for (const p of Q) { let s = 0; for (let i = 0; i < n; i++) s += w[i] * p[i]; for (let i = 0; i < n; i++) w[i] -= s * p[i]; }
+      for (const p of Q) { let s = 0; for (let i = 0; i < n; i++) s += w[i] * p[i]; for (let i = 0; i < n; i++) w[i] -= s * p[i]; }
+      let b = 0; for (let i = 0; i < n; i++) b += w[i] * w[i]; b = Math.sqrt(b);
+      if (b < 1e-10 || j === m - 1) break;
+      be.push(b); q = Float64Array.from(w, v => v / b);
+    }
+    const k = Q.length, T = new Float64Array(k * k);
+    for (let i = 0; i < k; i++) { T[i * k + i] = al[i]; if (i < k - 1) T[i * k + i + 1] = T[(i + 1) * k + i] = be[i]; }
+    const e = jacobi(T, k), values = [], vectors = [];
+    for (let s = k - 1; s >= 0; s--) {
+      values.push(e.values[s]);
+      if (vectors.length < want) { const y = e.vectors[s], v = new Float64Array(n); for (let j = 0; j < k; j++) for (let i = 0; i < n; i++) v[i] += y[j] * Q[j][i]; vectors.push(v); }
+    }
+    return { values: values.slice(0, Math.max(want, ritzKeep)), vectors };
+  }
+  /* bottom eigenpairs of a PSD matrix by shifted inverse subspace iteration (dense Cholesky) */
+  function bottomEig(A, n, want = 3) {
+    let tr = 0; for (let i = 0; i < n; i++) tr += A[i * n + i];
+    let shift = 1e-9 * tr / n + 1e-12, L;
+    for (let tries = 0; tries < 8; tries++, shift *= 100) {
+      L = new Float64Array(n * n); let ok = true;
+      for (let j = 0; j < n && ok; j++) {
+        let s = A[j * n + j] + shift; for (let k = 0; k < j; k++) s -= L[j * n + k] ** 2;
+        if (s <= 0) { ok = false; break; } const ljj = Math.sqrt(s); L[j * n + j] = ljj;
+        for (let i = j + 1; i < n; i++) { let t = A[i * n + j]; for (let k = 0; k < j; k++) t -= L[i * n + k] * L[j * n + k]; L[i * n + j] = t / ljj; }
+      }
+      if (ok) break;
+    }
+    const solve = b => { const y = new Float64Array(n); for (let i = 0; i < n; i++) { let s = b[i]; for (let k = 0; k < i; k++) s -= L[i * n + k] * y[k]; y[i] = s / L[i * n + i]; } for (let i = n - 1; i >= 0; i--) { let s = y[i]; for (let k = i + 1; k < n; k++) s -= L[k * n + i] * y[k]; y[i] = s / L[i * n + i]; } return y; };
+    const p = want + 3, r = rng(9);
+    let Q = Array.from({ length: p }, () => Float64Array.from({ length: n }, () => r() - 0.5)); orthonorm(Q, n);
+    for (let it = 0; it < 40; it++) { Q = Q.map(solve); orthonorm(Q, n); }
+    const AQ = Q.map(q => { const y = new Float64Array(n); matvec(A, n, q, y); return y; }), H = new Float64Array(p * p);
+    for (let a = 0; a < p; a++) for (let b = 0; b < p; b++) { let s = 0; for (let i = 0; i < n; i++) s += Q[a][i] * AQ[b][i]; H[a * p + b] = s; }
+    for (let a = 0; a < p; a++) for (let b = a + 1; b < p; b++) H[a * p + b] = H[b * p + a] = (H[a * p + b] + H[b * p + a]) / 2;
+    const e = jacobi(H, p);
+    return { values: e.values.slice(0, want), vectors: e.vectors.slice(0, want).map(y => { const v = new Float64Array(n); for (let j = 0; j < p; j++) for (let i = 0; i < n; i++) v[i] += y[j] * Q[j][i]; return v; }) };
+  }
+
+  /* Classical MDS from squared distances */
+  function doubleCenter(D2, n) {
+    const B = new Float64Array(n * n), rm = new Float64Array(n); let gm = 0;
+    for (let i = 0; i < n; i++) { let s = 0; for (let j = 0; j < n; j++) s += D2[i * n + j]; rm[i] = s / n; gm += s; }
+    gm /= n * n;
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) B[i * n + j] = -0.5 * (D2[i * n + j] - rm[i] - rm[j] + gm);
+    return B;
+  }
+  function cmds(D2, n, dims = 2) {
+    const B = doubleCenter(D2, n), e = topEig(B, n, dims, 8);
+    const Y = Array.from({ length: n }, () => new Array(dims).fill(0));
+    for (let k = 0; k < dims; k++) { const s = Math.sqrt(Math.max(e.values[k], 0)); for (let i = 0; i < n; i++) Y[i][k] = e.vectors[k][i] * s; }
+    return { Y, eig: e.values };
+  }
+
+  /* neighbourhood graph + geodesics */
+  function graph(D2, n, k) {
+    const nb = knn(D2, n, k), adj = Array.from({ length: n }, () => new Map());
+    for (let i = 0; i < n; i++) for (const j of nb[i]) { const w = Math.sqrt(D2[i * n + j]); adj[i].set(j, w); adj[j].set(i, w); }
+    return { nb, adj };
+  }
+  function dijkstra(adj, n, src, wantPrev = false) {
+    const dist = new Float64Array(n).fill(Infinity), prev = wantPrev ? new Int32Array(n).fill(-1) : null, heap = [[0, src]]; dist[src] = 0;
+    const push = x => { heap.push(x); let i = heap.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } };
+    const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0; for (;;) { const l = 2 * i + 1, r = l + 1; let m = i; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return top; };
+    while (heap.length) { const [d, u] = pop(); if (d > dist[u]) continue; for (const [v, w] of adj[u]) { const nd = d + w; if (nd < dist[v]) { dist[v] = nd; if (prev) prev[v] = u; push([nd, v]); } } }
+    return { dist, prev };
+  }
+  function components(adj, n) {
+    const comp = new Int32Array(n).fill(-1); let c = 0; const sizes = [];
+    for (let s = 0; s < n; s++) { if (comp[s] >= 0) continue; let sz = 0; const st = [s]; comp[s] = c; while (st.length) { const u = st.pop(); sz++; for (const v of adj[u].keys()) if (comp[v] < 0) { comp[v] = c; st.push(v); } } sizes.push(sz); c++; }
+    return { comp, sizes };
+  }
+  function isomap(X, k, D2pre) {
+    const n = X.length, D2 = D2pre || sqdist(X), g = graph(D2, n, k), cc = components(g.adj, n);
+    const big = cc.sizes.indexOf(Math.max(...cc.sizes)), idx = []; for (let i = 0; i < n; i++) if (cc.comp[i] === big) idx.push(i);
+    const m = idx.length, pos = new Int32Array(n).fill(-1); idx.forEach((v, i) => pos[v] = i);
+    const G2 = new Float64Array(m * m);
+    for (let a = 0; a < m; a++) { const d = dijkstra(g.adj, n, idx[a]).dist; for (let b = 0; b < m; b++) G2[a * m + b] = d[idx[b]] ** 2; }
+    const r = cmds(G2, m, 2), Y = Array.from({ length: n }, () => null); idx.forEach((v, i) => Y[v] = r.Y[i]);
+    return { Y, eig: r.eig, graph: g, comps: cc.sizes.length, kept: m };
+  }
+  function solveSym(C, k, b) { // Gaussian elimination with partial pivoting
+    const A = Array.from({ length: k }, (_, i) => [...C.slice(i * k, i * k + k), b[i]]);
+    for (let c = 0; c < k; c++) { let p = c; for (let r = c + 1; r < k; r++) if (Math.abs(A[r][c]) > Math.abs(A[p][c])) p = r; [A[c], A[p]] = [A[p], A[c]]; const d = A[c][c] || 1e-12; for (let r = c + 1; r < k; r++) { const f = A[r][c] / d; for (let j = c; j <= k; j++) A[r][j] -= f * A[c][j]; } }
+    const x = new Array(k).fill(0); for (let r = k - 1; r >= 0; r--) { let s = A[r][k]; for (let j = r + 1; j < k; j++) s -= A[r][j] * x[j]; x[r] = s / (A[r][r] || 1e-12); } return x;
+  }
+  function lleWeights(X, nb, reg) {
+    const n = X.length, d = X[0].length, W = [], err = [];
+    for (let i = 0; i < n; i++) {
+      const N = nb[i], k = N.length, Z = N.map(j => X[j].map((v, t) => v - X[i][t])), C = new Array(k * k);
+      let tr = 0; for (let a = 0; a < k; a++) for (let b = 0; b < k; b++) { let s = 0; for (let t = 0; t < d; t++) s += Z[a][t] * Z[b][t]; C[a * k + b] = s; if (a === b) tr += s; }
+      const R = reg * (tr > 0 ? tr : 1); for (let a = 0; a < k; a++) C[a * k + a] += R;
+      let w = solveSym(C, k, new Array(k).fill(1)); const sw = w.reduce((a, b) => a + b, 0); w = w.map(v => v / sw); W.push(w);
+      let e = 0; for (let t = 0; t < d; t++) { let s = X[i][t]; for (let a = 0; a < k; a++) s -= w[a] * X[N[a]][t]; e += s * s; } err.push(Math.sqrt(e));
+    }
+    return { W, err };
+  }
+  function lle(X, k, reg = 1e-3, D2pre) {
+    const n = X.length, D2 = D2pre || sqdist(X), nb = knn(D2, n, k), { W, err } = lleWeights(X, nb, reg);
+    const M = new Float64Array(n * n); for (let i = 0; i < n; i++) M[i * n + i] = 1;
+    for (let i = 0; i < n; i++) { const N = nb[i], w = W[i];
+      for (let a = 0; a < N.length; a++) { M[i * n + N[a]] -= w[a]; M[N[a] * n + i] -= w[a]; for (let b = 0; b < N.length; b++) M[N[a] * n + N[b]] += w[a] * w[b]; } }
+    const e = bottomEig(M, n, 3), s = Math.sqrt(n);
+    const Y = Array.from({ length: n }, (_, i) => [e.vectors[1][i] * s, e.vectors[2][i] * s]);
+    return { Y, nb, W, err, eig: e.values };
+  }
+
+  /* t-SNE (exact, gradient descent with gains & momentum) */
+  class TSNE {
+    constructor(X, perplexity = 30, seed = 1, D2pre) {
+      const n = X.length, D = D2pre || sqdist(X); this.n = n; this.iter = 0;
+      const P = new Float64Array(n * n), H = Math.log(perplexity), row = new Float64Array(n); this.sigma = new Float64Array(n);
+      for (let i = 0; i < n; i++) {
+        let beta = 1, lo = -Infinity, hi = Infinity;
+        for (let t = 0; t < 60; t++) {
+          let sum = 0; for (let j = 0; j < n; j++) { row[j] = j === i ? 0 : Math.exp(-D[i * n + j] * beta); sum += row[j]; }
+          let h = 0; for (let j = 0; j < n; j++) { const p = row[j] / (sum || 1e-300); if (p > 1e-12) h -= p * Math.log(p); }
+          if (Math.abs(h - H) < 1e-5) break;
+          if (h > H) { lo = beta; beta = hi === Infinity ? beta * 2 : (beta + hi) / 2; } else { hi = beta; beta = lo === -Infinity ? beta / 2 : (beta + lo) / 2; }
+        }
+        let sum = 0; for (let j = 0; j < n; j++) sum += row[j];
+        for (let j = 0; j < n; j++) P[i * n + j] = row[j] / (sum || 1e-300);
+        this.sigma[i] = Math.sqrt(1 / (2 * beta));
+      }
+      this.Pcond = Float64Array.from(P);
+      for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) { const v = Math.max((P[i * n + j] + P[j * n + i]) / (2 * n), 1e-100); P[i * n + j] = P[j * n + i] = v; }
+      for (let i = 0; i < n; i++) P[i * n + i] = 0;
+      this.P = P; const r = rng(seed);
+      this.Y = Array.from({ length: n }, () => [gauss(r) * 1e-2, gauss(r) * 1e-2]);
+      this.g = Array.from({ length: n }, () => [1, 1]); this.u = Array.from({ length: n }, () => [0, 0]);
+      this.Q = new Float64Array(n * n); this.kl = NaN;
+    }
+    step() {
+      const n = this.n, Y = this.Y, P = this.P, Q = this.Q, ex = this.iter < 100 ? 4 : 1, mom = this.iter < 250 ? 0.5 : 0.8, eta = 100;
+      let Z = 0;
+      for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) { const dx = Y[i][0] - Y[j][0], dy = Y[i][1] - Y[j][1], q = 1 / (1 + dx * dx + dy * dy); Q[i * n + j] = Q[j * n + i] = q; Z += 2 * q; }
+      const doKL = this.iter % 10 === 0; let kl = 0;
+      for (let i = 0; i < n; i++) {
+        let gx = 0, gy = 0;
+        for (let j = 0; j < n; j++) { if (i === j) continue; const q = Q[i * n + j], p = P[i * n + j], m = (ex * p - q / Z) * q; gx += m * (Y[i][0] - Y[j][0]); gy += m * (Y[i][1] - Y[j][1]); if (doKL && p > 1e-12) kl += p * Math.log(p / Math.max(q / Z, 1e-100)); }
+        const G = [4 * gx, 4 * gy];
+        for (let d = 0; d < 2; d++) {
+          const s = Math.sign(G[d]) === Math.sign(this.u[i][d]); this.g[i][d] = Math.max(s ? this.g[i][d] * 0.8 : this.g[i][d] + 0.2, 0.01);
+          this.u[i][d] = mom * this.u[i][d] - eta * this.g[i][d] * G[d]; Y[i][d] += this.u[i][d];
+        }
+      }
+      let mx = 0, my = 0; for (const y of Y) { mx += y[0]; my += y[1]; } mx /= n; my /= n; for (const y of Y) { y[0] -= mx; y[1] -= my; }
+      if (doKL) this.kl = kl; this.Z = Z; this.iter++;
+    }
+  }
+
+  /* fraction of each point's 10 nearest neighbours (in the reference space) that survive in the embedding */
+  function keptNeighbours(ref, Y, k = 10) {
+    const idx = []; Y.forEach((y, i) => { if (y) idx.push(i); }); const m = idx.length;
+    const R = sqdist(idx.map(i => ref[i])), E = sqdist(idx.map(i => Y[i])), a = knn(R, m, k), b = knn(E, m, k);
+    let s = 0; for (let i = 0; i < m; i++) { const S = new Set(a[i]); s += b[i].filter(j => S.has(j)).length / k; } return s / m;
+  }
+  /* rotate/reflect Y onto T (both centred) — for the "snap to truth" view */
+  function procrustes(Y, T) {
+    const n = Y.length, c = a => { let x = 0, y = 0; a.forEach(p => { x += p[0]; y += p[1]; }); return [x / n, y / n]; };
+    const cy = c(Y), ct = c(T), best = { err: Infinity };
+    for (const f of [1, -1]) {
+      const A = Y.map(p => [(p[0] - cy[0]) * f, p[1] - cy[1]]), B = T.map(p => [p[0] - ct[0], p[1] - ct[1]]);
+      let sx = 0, sd = 0; A.forEach((p, i) => { sd += p[0] * B[i][0] + p[1] * B[i][1]; sx += p[0] * B[i][1] - p[1] * B[i][0]; });
+      const th = Math.atan2(sx, sd), co = Math.cos(th), si = Math.sin(th), R = A.map(p => [p[0] * co - p[1] * si + ct[0], p[0] * si + p[1] * co + ct[1]]);
+      const err = R.reduce((s, p, i) => s + (p[0] - T[i][0]) ** 2 + (p[1] - T[i][1]) ** 2, 0); if (err < best.err) { best.err = err; best.Y = R; }
+    }
+    return best.Y;
+  }
+  return { set(a,b,h){T0=a;T1=b;HW=h;}, rng, gauss, swissRoll, sCurve, clusters, sqdist, knn, jacobi, topEig, bottomEig, doubleCenter, cmds, graph, dijkstra, components, isomap, lle, lleWeights, TSNE, keptNeighbours, procrustes, arc, T0, T1 };
+})();
+
+
+</script>
+<script>
+{
+const $ = s => document.querySelector(s);
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const views = [];
+const TK = {};
+function readTokens() { const s = getComputedStyle(document.documentElement); for (const k of ['ink', 'muted', 'line', 'bg', 'coral', 'path', 'lime', 'soft']) TK[k] = s.getPropertyValue('--' + k).trim(); }
+readTokens();
+const redrawAll = () => { readTokens(); views.forEach(v => v.draw()); kernelDraw && kernelDraw(); };
+let kernelDraw = null;
+const themeObs = new MutationObserver(redrawAll); themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', redrawAll);
+const C = c => TK[c] || c;
+
+const STOPS = [[79, 107, 237], [31, 174, 143], [198, 207, 46], [255, 111, 89]];
+function ramp(u) { u = Math.max(0, Math.min(1, u)) * 3; const i = Math.min(2, Math.floor(u)), f = u - i, a = STOPS[i], b = STOPS[i + 1]; return `rgb(${a.map((v, k) => Math.round(v + (b[k] - v) * f)).join(',')})`; }
+const CAT = ['#4f6bed', '#1fae8f', '#e0a100', '#ff6f59', '#b05ce0', '#2aa7d6'];
+const colorsOf = d => d.kind === 'categorical' ? d.c.map(k => CAT[k]) : d.c.map(ramp);
+const debounce = (f, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => f(...a), ms); }; };
+function whenVisible(el, fn) { const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { io.disconnect(); fn(); } }, { rootMargin: '400px' }); io.observe(el); }
+const busy = (ids, on) => ids.forEach(id => { const el = $(id); if (el) el.classList.toggle('working', on); });
+const later = f => new Promise(res => setTimeout(() => res(f()), 30));
+const pct = x => Math.round(x * 100) + '%';
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function setupCanvas(cv, draw) {
+  const st = { W: 0, H: 0, dpr: 1, ctx: cv.getContext('2d') };
+  const ro = new ResizeObserver(() => { const r = cv.getBoundingClientRect(); st.dpr = Math.min(devicePixelRatio || 1, 2); st.W = r.width; st.H = r.height; cv.width = Math.round(r.width * st.dpr); cv.height = Math.round(r.height * st.dpr); draw(); });
+  ro.observe(cv); return st;
+}
+function strokeGroups(ctx, groups, proj) {
+  for (const g of groups) {
+    if (!g.list.length) continue;
+    ctx.strokeStyle = C(g.color); ctx.lineWidth = g.width || 1; ctx.globalAlpha = g.alpha ?? 0.5; ctx.setLineDash(g.dash || []);
+    ctx.beginPath();
+    for (const [i, j] of g.list) { const a = proj[i], b = proj[j]; if (!a || !b) continue; ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); }
+    ctx.stroke();
+  }
+  ctx.setLineDash([]); ctx.globalAlpha = 1;
+}
+function ring(ctx, x, y, r, fill, stroke, w = 2) { ctx.beginPath(); ctx.arc(x, y, r, 0, 7); if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = w; ctx.stroke(); } }
+
+/* ---------- rotatable 3-D point cloud ---------- */
+function View3D(cv, o = {}) {
+  const ax = o.axes || [0, 2, 1];
+  const v = { pts: [], col: [], yaw: o.yaw ?? 0.35, pitch: o.pitch ?? 0.6, edges: [], lines: [], marks: [], hi: new Map(), size: o.size || 2.5, onPick: null, frame: null, dim: false, draw };
+  const st = setupCanvas(cv, () => draw());
+  let proj = [];
+  function autoFrame() {
+    const mn = [1e9, 1e9, 1e9], mx = [-1e9, -1e9, -1e9];
+    for (const p of v.pts) for (let k = 0; k < 3; k++) { const q = p[ax[k]]; if (q < mn[k]) mn[k] = q; if (q > mx[k]) mx[k] = q; }
+    const c = mn.map((m, k) => (m + mx[k]) / 2); let R = 0;
+    for (const p of v.pts) R = Math.max(R, Math.hypot(p[ax[0]] - c[0], p[ax[1]] - c[1], p[ax[2]] - c[2]));
+    return { c, R: R || 1 };
+  }
+  function draw() {
+    const { ctx, W, H, dpr } = st; if (!W) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+    if (!v.pts.length) return;
+    const f = v.frame ? v.frame() : autoFrame(), sx = o.shift ? o.shift(W) : 0.5, s = Math.min(W * (sx > 0.5 ? 0.66 : 1), H) * 0.47 / f.R;
+    const cy = Math.cos(v.yaw), sy = Math.sin(v.yaw), cp = Math.cos(v.pitch), sp = Math.sin(v.pitch);
+    const P = p => { const x = p[ax[0]] - f.c[0], y = p[ax[1]] - f.c[1], z = p[ax[2]] - f.c[2]; const x1 = cy * x + sy * z, z1 = -sy * x + cy * z; const y2 = cp * y - sp * z1, z2 = sp * y + cp * z1; const k = s * (1 + 0.18 * z2 / f.R); return [W * sx + x1 * k, H / 2 - y2 * k, z2 / f.R]; };
+    proj = v.pts.map(P);
+    strokeGroups(ctx, v.edges, proj);
+    const ord = proj.map((p, i) => i).sort((a, b) => proj[a][2] - proj[b][2]);
+    const dimming = v.dim && v.hi.size;
+    for (const i of ord) {
+      const p = proj[i]; let a = 0.35 + 0.65 * (p[2] + 1) / 2; if (dimming && !v.hi.has(i)) a *= 0.35;
+      ctx.globalAlpha = a; ctx.fillStyle = C(v.col[i]); ctx.beginPath(); ctx.arc(p[0], p[1], v.size * (1 + 0.22 * p[2]), 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    for (const L of v.lines) {
+      ctx.strokeStyle = C(L.color); ctx.lineWidth = L.width || 2; ctx.setLineDash(L.dash || []); ctx.lineJoin = 'round';
+      ctx.beginPath(); L.pts.forEach((q, j) => { const p = P(q); j ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.stroke(); ctx.setLineDash([]);
+    }
+    for (const [i, h] of v.hi) { const p = proj[i]; if (p) ring(ctx, p[0], p[1], h.r || 6, h.hollow ? null : C(v.col[i]), C(h.stroke || 'ink'), h.w || 2); }
+    for (const m of v.marks) { const p = P(m.p); ring(ctx, p[0], p[1], m.r || 9, null, C(m.color || 'ink'), 2.5); }
+  }
+  let drag = null;
+  cv.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, m: 0, yaw: v.yaw, pitch: v.pitch }; cv.setPointerCapture(e.pointerId); o.onTouch && o.onTouch(); });
+  cv.addEventListener('pointermove', e => { if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.m = Math.max(drag.m, Math.abs(dx) + Math.abs(dy)); v.yaw = drag.yaw + dx * 0.01; v.pitch = Math.max(-1.5, Math.min(1.5, drag.pitch + dy * 0.01)); draw(); });
+  const end = e => {
+    if (drag && drag.m < 5 && v.onPick) {
+      const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top; const cand = [];
+      proj.forEach((p, i) => { const d = Math.hypot(p[0] - x, p[1] - y); if (d < 14) cand.push([p[2], i]); });
+      if (cand.length) v.onPick(cand.sort((a, b) => b[0] - a[0])[0][1]);
+    }
+    drag = null;
+  };
+  cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', () => drag = null);
+  cv.addEventListener('keydown', e => { const k = { ArrowLeft: [-0.1, 0], ArrowRight: [0.1, 0], ArrowUp: [0, -0.1], ArrowDown: [0, 0.1] }[e.key]; if (!k) return; e.preventDefault(); v.yaw += k[0]; v.pitch = Math.max(-1.5, Math.min(1.5, v.pitch + k[1])); draw(); });
+  views.push(v); return v;
+}
+
+/* ---------- 2-D scatter ---------- */
+function View2D(cv, o = {}) {
+  const v = { pts: [], col: [], size: o.size || 3, edges: [], marks: [], hi: new Map(), labels: null, onPick: null, onDrag: null, bounds: null, smooth: !!o.smooth, dim: false, cur: null, draw };
+  const st = setupCanvas(cv, () => draw());
+  let T = null, proj = [];
+  function fit() {
+    let b;
+    if (v.bounds) b = v.bounds.slice();
+    else { b = [1e9, -1e9, 1e9, -1e9]; for (const p of v.pts) if (p) { b[0] = Math.min(b[0], p[0]); b[1] = Math.max(b[1], p[0]); b[2] = Math.min(b[2], p[1]); b[3] = Math.max(b[3], p[1]); } }
+    v.cur = v.smooth && v.cur ? v.cur.map((c, i) => c + (b[i] - c) * 0.12) : b;
+    const cb = v.cur, pad = o.pad ?? 22, w = st.W - 2 * pad, h = st.H - 2 * pad - (o.top || 0), dx = (cb[1] - cb[0]) || 1, dy = (cb[3] - cb[2]) || 1, s = Math.min(w / dx, h / dy);
+    return { s, ox: pad + (w - dx * s) / 2 - cb[0] * s, oy: pad + (o.top || 0) + (h - dy * s) / 2 + cb[3] * s };
+  }
+  const P = p => p ? [T.ox + p[0] * T.s, T.oy - p[1] * T.s] : null;
+  function draw() {
+    const { ctx, W, H, dpr } = st; if (!W) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+    if (!v.pts.length) return;
+    T = fit(); proj = v.pts.map(P);
+    strokeGroups(ctx, v.edges, proj);
+    const dimming = v.dim && v.hi.size;
+    proj.forEach((p, i) => { if (!p) return; ctx.globalAlpha = dimming && !v.hi.has(i) ? 0.3 : 0.92; ctx.fillStyle = C(v.col[i]); ctx.beginPath(); ctx.arc(p[0], p[1], v.size, 0, 7); ctx.fill(); });
+    ctx.globalAlpha = 1;
+    for (const [i, h] of v.hi) { const p = proj[i]; if (p) ring(ctx, p[0], p[1], h.r || 6, h.hollow ? null : C(v.col[i]), C(h.stroke || 'ink'), h.w || 2); }
+    for (const m of v.marks) { const p = P(m.p); ring(ctx, p[0], p[1], m.r || 9, null, C(m.color || 'ink'), 2.5); }
+    if (v.labels) {
+      ctx.font = '600 13px Inter, sans-serif'; ctx.fillStyle = C('ink'); ctx.textBaseline = 'middle';
+      proj.forEach((p, i) => { if (!p) return; const tw = ctx.measureText(v.labels[i]).width; const right = p[0] + tw + 12 < W; ctx.textAlign = right ? 'left' : 'right'; ctx.fillText(v.labels[i], p[0] + (right ? 10 : -10), p[1]); });
+    }
+  }
+  const toData = (x, y) => [(x - T.ox) / T.s, (T.oy - y) / T.s];
+  const nearest = (x, y, lim) => { let best = -1, bd = lim; proj.forEach((p, i) => { if (!p) return; const d = Math.hypot(p[0] - x, p[1] - y); if (d < bd) { bd = d; best = i; } }); return best; };
+  let drag = null;
+  const xy = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  cv.addEventListener('pointerdown', e => { if (!T) return; const [x, y] = xy(e); const i = nearest(x, y, v.onDrag ? 24 : 16); drag = { i, x, y }; if (v.onDrag && i >= 0) cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener('pointermove', e => { if (!drag || !v.onDrag || drag.i < 0) return; const [x, y] = xy(e); v.onDrag(drag.i, ...toData(x, y)); });
+  cv.addEventListener('pointerup', e => { if (drag && !v.onDrag && drag.i >= 0 && v.onPick) v.onPick(drag.i); drag = null; });
+  views.push(v); return v;
+}
+const bars = rows => rows.map(r => `<div class="bar"><span>${r.label}</span><span><i class="${r.neg ? 'neg' : ''}" style="width:${Math.max(1, r.w * 100).toFixed(1)}%;${r.color ? 'background:' + r.color : ''}"></i></span><em>${r.value}</em></div>`).join('');
+const stats = rows => rows.map(([v, l]) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`).join('');
+
+/* ---------- hero: unroll by hand ---------- */
+{
+  const cv = $('#heroCv'), r = ML.rng(2), N = 1700, T0 = 1.5 * Math.PI, T1 = 4 * Math.PI, HW = 15, base = [];
+  for (let i = 0; i < N; i++) { const u = r(); base.push([T0 + (T1 - T0) * u, HW * r(), u]); }
+  let touched = false;
+  const v = View3D(cv, { size: 2.2, yaw: 0.3, pitch: 0.95, shift: W => W > 900 ? 0.64 : 0.5, onTouch: () => touched = true });
+  v.col = base.map(b => ramp(b[2]));
+  const shape = a => {
+    const tc = T1 - a * (T1 - T0), ac = ML.arc(tc), tx = Math.cos(tc) - tc * Math.sin(tc), tz = Math.sin(tc) + tc * Math.cos(tc), tn = Math.hypot(tx, tz), px = tc * Math.cos(tc), pz = tc * Math.sin(tc);
+    return base.map(([t, h]) => { if (t <= tc) return [t * Math.cos(t), h, t * Math.sin(t)]; const s = ML.arc(t) - ac; return [px + tx / tn * s, h, pz + tz / tn * s]; });
+  };
+  const sl = $('#heroU'), out = $('#heroUo');
+  const set = a => { v.pts = shape(a); out.textContent = Math.round(a * 100) + '%'; v.draw(); };
+  sl.addEventListener('input', () => { touched = true; set(sl.value / 100); });
+  set(0);
+  if (!reduceMotion) {
+    const t0 = performance.now() + 700, dur = 2600, goal = 0.42;
+    const tick = now => { if (touched) return; const f = Math.max(0, Math.min(1, (now - t0) / dur)), e = f < 0.5 ? 2 * f * f : 1 - (-2 * f + 2) ** 2 / 2; sl.value = Math.round(e * goal * 100); set(e * goal); if (f < 1) requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  }
+}
+
+/* ---------- lesson 1: geodesics ---------- */
+whenVisible($('#idea'), () => {
+  const n = 500, d = ML.swissRoll(n, 0.15, 7), D2 = ML.sqdist(d.X), g = ML.graph(D2, n, 7);
+  const v = View3D($('#cv1'), { size: 2.6 }); v.pts = d.X; v.col = d.c.map(ramp); v.dim = false;
+  const edges = []; g.adj.forEach((m, i) => m.forEach((w, j) => { if (j > i) edges.push([i, j]); }));
+  let sel = [];
+  const geo = (i, j) => Math.hypot(d.intr[i][0] - d.intr[j][0], d.intr[i][1] - d.intr[j][1]);
+  function update() {
+    v.hi.clear(); v.lines = []; sel.forEach(i => v.hi.set(i, { r: 7, w: 2.5 }));
+    const live = $('#live1');
+    if (sel.length < 2) { $('#d1').innerHTML = ''; live.textContent = sel.length ? 'Now click a second point.' : 'Click any point on the roll to start.'; live.className = 'live'; v.draw(); return; }
+    const [a, b] = sel, { dist, prev } = ML.dijkstra(g.adj, n, a, true), path = [];
+    for (let u = b; u !== -1; u = prev[u]) path.push(d.X[u]);
+    v.lines = [{ pts: [d.X[a], d.X[b]], color: 'ink', width: 2, dash: [6, 5] }, { pts: path, color: 'coral', width: 3.5 }];
+    const e = Math.sqrt(D2[a * n + b]), gp = dist[b], tg = geo(a, b), mx = Math.max(e, gp, tg);
+    $('#d1').innerHTML = bars([
+      { label: 'Straight line', w: e / mx, value: e.toFixed(1), color: 'var(--ink)' },
+      { label: 'Neighbour hops', w: gp / mx, value: gp.toFixed(1), color: 'var(--coral)' },
+      { label: 'True, along the sheet', w: tg / mx, value: tg.toFixed(1), color: 'var(--path)' }]);
+    const q = tg / e, err = Math.abs(gp - tg) / tg;
+    if (q > 2) { live.className = 'live warn'; live.innerHTML = `Along the sheet these points are <b>${q.toFixed(1)}× further apart</b> than through the air. A method that trusts straight lines will think they're neighbours. The hop path gets within ${pct(err)} of the true distance just by adding up short steps.`; }
+    else { live.className = 'live'; live.innerHTML = `The straight line and the surface distance agree to within ${pct(q - 1)}. Over short ranges the roll is nearly flat, which is exactly the property every manifold learner relies on.`; }
+    v.draw();
+  }
+  v.onPick = i => { if (sel.length >= 2 || sel[0] === i) sel = [i]; else sel.push(i); update(); };
+  $('#trick').addEventListener('click', () => {
+    const r = ML.rng((Math.random() * 1e9) | 0); let best = null;
+    for (let t = 0; t < 6000; t++) { const i = (r() * n) | 0, j = (r() * n) | 0, e = Math.sqrt(D2[i * n + j]); if (e < 4 || e > 9) continue; const q = geo(i, j) / e; if (!best || q > best[0]) best = [q, i, j]; }
+    sel = [best[1], best[2]]; update();
+  });
+  $('#g1').addEventListener('change', e => { v.edges = e.target.checked ? [{ color: 'muted', width: 0.7, alpha: 0.4, list: edges }] : []; v.draw(); });
+  $('#trick').click();
+});
+
+/* shared roll for lessons 2 and 3 */
+const rollCache = {};
+const roll = (noise, hole = false) => { const key = noise + '|' + hole; if (!rollCache[key]) { const d = ML.swissRoll(500, noise, 7, hole); d.D2 = ML.sqdist(d.X); rollCache[key] = d; } return rollCache[key]; };
+
+/* ---------- lesson 2: classical MDS ---------- */
+whenVisible($('#mds'), () => {
+  const CITIES = [['Denver', 'DEN', 39.74, -104.99], ['Salt Lake City', 'SLC', 40.76, -111.89], ['Albuquerque', 'ABQ', 35.08, -106.65], ['Phoenix', 'PHX', 33.45, -112.07], ['Cheyenne', 'CYS', 41.14, -104.82], ['Boise', 'BOI', 43.62, -116.2], ['Las Vegas', 'LAS', 36.17, -115.14], ['Kansas City', 'MCI', 39.1, -94.58], ['Omaha', 'OMA', 41.26, -95.93], ['Dallas', 'DFW', 32.78, -96.8]];
+  const toXY = c => [(c[3] + 105) * 111.32 * Math.cos(39 * Math.PI / 180), (c[2] - 39) * 110.57];
+  const home = CITIES.map(toXY), m = home.length; let truth = home.map(p => p.slice());
+  const r = ML.rng(4), Z = new Float64Array(m * m); for (let i = 0; i < m; i++) for (let j = i + 1; j < m; j++) Z[i * m + j] = Z[j * m + i] = ML.gauss(r);
+  let bx = [1e9, -1e9, 1e9, -1e9]; home.forEach(p => { bx = [Math.min(bx[0], p[0]), Math.max(bx[1], p[0]), Math.min(bx[2], p[1]), Math.max(bx[3], p[1])]; });
+  const pad = 260, bounds = [bx[0] - pad, bx[1] + pad, bx[2] - pad, bx[3] + pad];
+  const cols = CITIES.map((c, i) => ramp(i / (m - 1)));
+  const A = View2D($('#cv2a'), { size: 6 }), B = View2D($('#cv2b'), { size: 6 });
+  A.bounds = bounds; A.col = cols; B.col = cols; A.labels = B.labels = CITIES.map(c => c[0]);
+  A.onDrag = (i, x, y) => { truth[i] = [Math.max(bounds[0], Math.min(bounds[1], x)), Math.max(bounds[2], Math.min(bounds[3], y))]; compute(); };
+  function compute() {
+    const noise = $('#noise2').value / 100, align = $('#align2').checked;
+    const D = new Float64Array(m * m), D2 = new Float64Array(m * m);
+    for (let i = 0; i < m; i++) for (let j = 0; j < m; j++) if (i !== j) { const dd = Math.hypot(truth[i][0] - truth[j][0], truth[i][1] - truth[j][1]) * Math.max(0, 1 + noise * Z[i * m + j]); D[i * m + j] = dd; D2[i * m + j] = dd * dd; }
+    const e = ML.jacobi(ML.doubleCenter(D2, m), m), vals = e.values.slice().reverse(), vecs = e.vectors.slice().reverse();
+    let Y = Array.from({ length: m }, (_, i) => [vecs[0][i] * Math.sqrt(Math.max(vals[0], 0)), vecs[1][i] * Math.sqrt(Math.max(vals[1], 0))]);
+    if (align) { Y = ML.procrustes(Y, truth); B.bounds = bounds; } else { const cx = 0; B.bounds = null; }
+    A.pts = truth; B.pts = Y; A.draw(); B.draw();
+    const tot = vals.reduce((s, x) => s + Math.abs(x), 0), mx = Math.max(...vals.map(Math.abs));
+    $('#eig2').innerHTML = bars(vals.map((x, i) => ({ label: `λ${i + 1}`, w: Math.abs(x) / mx, neg: x < -1e-6 * mx, value: (x < -1e-6 * mx ? '−' : '') + (Math.abs(x) / tot * 100).toFixed(1) + '%' })));
+    const share = (vals[0] + vals[1]) / tot, neg = vals.filter(x => x < -1e-6 * mx).length;
+    let msg = noise === 0
+      ? `λ₁ and λ₂ hold ${(share * 100).toFixed(1)}% of the total and the rest are essentially zero. The table describes a flat 2-D map exactly, so MDS recovers it exactly${align ? ', here rotated to line up with yours.' : ', up to rotation and mirroring.'}`
+      : `With ${Math.round(noise * 100)}% error, no flat map fits every distance. ${neg} eigenvalue${neg === 1 ? '' : 's'} went negative, the table's way of saying it's inconsistent. MDS keeps the top two, which still hold ${(share * 100).toFixed(0)}%, so the map is close but no longer exact.`;
+    if (!align) msg += ' Distances carry no sense of direction, so the rebuilt map can come out turned or flipped.';
+    $('#live2').innerHTML = msg; $('#live2').className = noise > 0 ? 'live warn' : 'live';
+    $('#dtab').innerHTML = `<tr><th></th>${CITIES.map(c => `<th>${c[1]}</th>`).join('')}</tr>` + CITIES.map((c, i) => `<tr><th>${c[1]}</th>${CITIES.map((_, j) => `<td>${i === j ? '0' : Math.round(D[i * m + j])}</td>`).join('')}</tr>`).join('');
+  }
+  $('#noise2').addEventListener('input', e => { $('#noise2o').textContent = e.target.value + '%'; compute(); });
+  $('#align2').addEventListener('change', compute);
+  $('#reset2').addEventListener('click', () => { truth = home.map(p => p.slice()); compute(); });
+  compute();
+  whenVisible($('#f2c'), async () => {
+    busy(['#f2c'], true); const d = roll(0.2);
+    const res = await later(() => ML.cmds(d.D2, 500));
+    const v = View2D($('#cv2c'), { size: 2.6 }); v.pts = res.Y; v.col = d.c.map(ramp); v.draw(); busy(['#f2c'], false);
+  });
+});
+
+/* ---------- lesson 3: Isomap ---------- */
+whenVisible($('#isomap'), () => {
+  const A = View3D($('#cv3a'), { size: 2.4 }), B = View2D($('#cv3b'), { size: 2.8 });
+  let d = null, res = null, sel = -1;
+  function render() {
+    A.hi.clear(); B.hi.clear(); A.dim = B.dim = sel >= 0;
+    if (sel >= 0) { A.hi.set(sel, { r: 7 }); B.hi.set(sel, { r: 7 }); for (const j of res.graph.adj[sel].keys()) { A.hi.set(j, { r: 4.5, w: 1.5 }); B.hi.set(j, { r: 4.5, w: 1.5 }); } }
+    A.draw(); B.draw();
+  }
+  async function compute() {
+    const k = +$('#k3').value, noise = $('#n3').value / 10;
+    busy(['#f3a', '#f3b'], true);
+    await later(() => {
+      d = roll(noise); res = ML.isomap(d.X, k, d.D2);
+      const normal = [], short = [];
+      res.graph.adj.forEach((mp, i) => mp.forEach((w, j) => { if (j <= i) return; const gd = Math.hypot(d.intr[i][0] - d.intr[j][0], d.intr[i][1] - d.intr[j][1]); (gd > 1.8 * w + 1 ? short : normal).push([i, j]); }));
+      res.short = short.length; res.kept = ML.keptNeighbours(d.intr, res.Y);
+      A.pts = d.X; A.col = d.c.map((u, i) => res.Y[i] ? ramp(u) : 'line');
+      A.edges = [{ color: 'muted', width: 0.6, alpha: 0.32, list: normal }, { color: 'coral', width: 2.2, alpha: 0.95, list: short }];
+      B.pts = res.Y; B.col = d.c.map(ramp);
+    });
+    busy(['#f3a', '#f3b'], false); render();
+    $('#s3').innerHTML = stats([[res.comps, res.comps === 1 ? 'graph piece' : 'graph pieces'], [res.short, 'short-circuit edges'], [pct(res.kept), 'neighbours kept']]);
+    const live = $('#live3');
+    if (res.comps > 1) { live.className = 'live warn'; live.innerHTML = `With only ${k} neighbours the graph has split into <b>${res.comps} pieces</b> with no path between them, so their geodesic distances are infinite. Isomap can only map the largest piece (${res.kept === undefined ? '' : ''}${res.Y.filter(Boolean).length} of 500 points; the rest are greyed out).`; }
+    else if (res.short > 0) { live.className = 'live warn'; live.innerHTML = `<b>${res.short} edge${res.short === 1 ? '' : 's'}</b> jump between layers (coral). Each is a wormhole: shortest paths use it, distances between whole layers collapse, and the flat map folds over itself.${res.short < 4 ? ' Even this few is often enough.' : ''}`; }
+    else { live.className = 'live'; live.innerHTML = `Every edge stays on the sheet, so path lengths track true distances along it. MDS on those distances unrolls the roll: colours run smoothly from one end of the map to the other.`; }
+  }
+  const go = debounce(compute, 120);
+  $('#k3').addEventListener('input', e => { $('#k3o').textContent = e.target.value; go(); });
+  $('#n3').addEventListener('input', e => { $('#n3o').textContent = (e.target.value / 10).toFixed(1); go(); });
+  A.onPick = B.onPick = i => { sel = sel === i ? -1 : i; render(); };
+  compute();
+});
+
+/* ---------- lesson 4: LLE ---------- */
+whenVisible($('#lle'), () => {
+  const A = View3D($('#cv4a'), { size: 2.4 }), B = View2D($('#cv4b'), { size: 2.8 });
+  const d = ML.swissRoll(500, 0.1, 7); d.D2 = ML.sqdist(d.X);
+  let res = null, sel = 0;
+  { let best = 1e9; d.intr.forEach((p, i) => { const s = Math.hypot(p[0] - 55, p[1] - 7.5); if (s < best) { best = s; sel = i; } }); }
+  A.pts = d.X; A.col = d.c.map(ramp); B.col = d.c.map(ramp);
+  function render() {
+    const N = res.nb[sel], W = res.W[sel], k = N.length;
+    for (const V of [A, B]) { V.hi.clear(); V.dim = true; V.hi.set(sel, { r: 7.5, w: 2.5 }); N.forEach(j => V.hi.set(j, { r: 5, w: 1.5 })); V.edges = [{ color: 'ink', width: 1.2, alpha: 0.7, list: N.map(j => [sel, j]) }]; }
+    const rec3 = [0, 1, 2].map(t => N.reduce((s, j, a) => s + W[a] * d.X[j][t], 0)), rec2 = [0, 1].map(t => N.reduce((s, j, a) => s + W[a] * res.Y[j][t], 0));
+    A.marks = [{ p: rec3, color: 'coral', r: 10 }]; B.marks = [{ p: rec2, color: 'coral', r: 10 }];
+    A.draw(); B.draw();
+    const ord = N.map((j, a) => [W[a], j]).sort((x, y) => y[0] - x[0]), mx = Math.max(...W.map(Math.abs));
+    $('#w4h').textContent = `Recipe for the selected point: ${k} weights, summing to ${W.reduce((s, x) => s + x, 0).toFixed(3)}`;
+    $('#w4').innerHTML = bars(ord.map(([w, j]) => ({ label: `<span style="color:${ramp(d.c[j])}">●</span> ${Math.sqrt(d.D2[sel * 500 + j]).toFixed(1)} away`, w: Math.abs(w) / mx, neg: w < 0, value: (w < 0 ? '−' : '') + Math.abs(w).toFixed(3), color: w < 0 ? null : ramp(d.c[j]) })));
+    const spacing = N.reduce((s, j) => s + Math.sqrt(d.D2[sel * 500 + j]), 0) / k, rel = res.err[sel] / spacing;
+    const reg = 10 ** +$('#r4').value, live = $('#live4'); let msg = `The ring marks the point rebuilt from its recipe, within ${pct(rel)} of a typical neighbour distance. On the right, the same recipe applied to the neighbours' 2-D positions lands close to the point again: that's what LLE optimised for.`;
+    let warn = false;
+    if (reg >= 0.1) { msg = `With regularisation this strong, every weight is pulled towards 1/k = ${(1 / k).toFixed(3)}, so each point is just the plain average of its neighbours. The recipe stops describing the patch's shape and the map loses detail.`; warn = true; }
+    else if (k >= 20) { msg = `With ${k} neighbours, a patch spans a curved stretch of roll, so “each patch is flat” no longer holds. The recipes describe curved patches and the map warps or squeezes.`; warn = true; }
+    if (ord.some(([w]) => w < 0) && !warn) msg += ' Negative weights (coral) are normal: they let the mix reach points outside the neighbours’ average.';
+    live.innerHTML = msg; live.className = warn ? 'live warn' : 'live';
+  }
+  async function compute() {
+    const k = +$('#k4').value, reg = 10 ** +$('#r4').value;
+    busy(['#f4a', '#f4b'], true);
+    res = await later(() => ML.lle(d.X, k, reg, d.D2));
+    res.kept = ML.keptNeighbours(d.intr, res.Y); B.pts = res.Y;
+    busy(['#f4a', '#f4b'], false); render();
+  }
+  const go = debounce(compute, 150);
+  $('#k4').addEventListener('input', e => { $('#k4o').textContent = e.target.value; go(); });
+  $('#r4').addEventListener('input', e => { const r = 10 ** +e.target.value; $('#r4o').textContent = r < 0.01 ? r.toExponential(0) : r.toFixed(r < 0.1 ? 3 : 2); go(); });
+  A.onPick = B.onPick = i => { sel = i; if (res) render(); };
+  compute();
+});
+
+/* ---------- lesson 5: t-SNE ---------- */
+whenVisible($('#tsne'), () => {
+  const V = View2D($('#cv5'), { size: 3.2, smooth: true });
+  const data = { clusters: ML.clusters(500), roll: roll(0.2) };
+  data.clusters.D2 = ML.sqdist(data.clusters.X);
+  for (const key in data) { const dd = data[key]; dd.nn = ML.knn(dd.D2, 500, 10); }
+  const NAMES = ['A: tight', 'B: A’s near twin', 'C: four times as spread out', 'D', 'E', 'F: medium spread'];
+  let ts = null, d = null, playing = false, sel = -1, gen = 0;
+  function legend() { $('#leg5').innerHTML = d.kind === 'categorical' ? NAMES.map((nm, i) => `<span style="--c:${CAT[i]}">${nm}</span>`).join('') : '<div style="width:100%"><div class="ramp"></div><div class="rampl"><span>start of the sheet</span><span>end</span></div></div>'; }
+  function hi() {
+    V.hi.clear(); V.dim = sel >= 0;
+    if (sel >= 0) { V.hi.set(sel, { r: 7.5, w: 2.5 }); d.nn[sel].forEach(j => V.hi.set(j, { r: 5.5, hollow: false, w: 1.6 })); }
+  }
+  function report() {
+    const stage = ts.iter < 100 ? 'Early exaggeration' : ts.iter < 250 ? 'Settling' : ts.iter >= 1000 ? 'Done' : 'Fine-tuning';
+    $('#s5').innerHTML = stats([[ts.iter, 'steps of gradient descent'], [stage, 'stage'], [isNaN(ts.kl) ? '–' : ts.kl.toFixed(2), 'KL(P‖Q), lower is better']]);
+    const live = $('#live5'); let msg;
+    if (ts.iter === 0) msg = `Points start in a tiny random blob. Press Play to watch gradient descent pull neighbours together and push everything else apart.`;
+    else if (ts.iter < 100) msg = `Early exaggeration: every p<sub>ij</sub> is multiplied by 4, so attraction dominates and true neighbours clump quickly while there's still room to move.`;
+    else if (ts.iter < 250) msg = `Exaggeration is off. Attraction and repulsion now balance, and the groups spread out to their final shapes.`;
+    else msg = d.kind === 'categorical' ? `Compare cluster C with A. In 10-D, C is four times as spread out, yet both get similar room here: each point's σ adapts to local density, so t-SNE evens it out. A and B are near-twins in 10-D; whether they sit close on the map can change between runs.` : `Neighbouring colours stay together, but look for places where the sheet has been torn into strips or folded. t-SNE only promises local neighbourhoods, not one continuous unrolled sheet.`;
+    if (sel >= 0) { const E = ML.sqdist(ts.Y), mine = ML.knn(E, 500, 10)[sel], S = new Set(d.nn[sel]); msg += ` For the selected point, <b>${mine.filter(j => S.has(j)).length} of its 10</b> nearest neighbours in the original space are also among its 10 nearest on the map.`; }
+    live.innerHTML = msg;
+  }
+  async function build() {
+    const my = ++gen, perp = +$('#p5').value, wasPlaying = playing; playing = false;
+    d = data[$('#ds5').value]; legend(); sel = -1; busy(['#f5'], true);
+    const t = await later(() => new ML.TSNE(d.X, perp, 3, d.D2)); if (my !== gen) return;
+    ts = t; V.pts = ts.Y; V.col = colorsOf(d); V.cur = null; hi(); V.draw(); busy(['#f5'], false); report();
+    if (wasPlaying) setPlaying(true);
+  }
+  function setPlaying(on) { playing = on && ts && ts.iter < 1000; $('#play5').textContent = playing ? 'Pause' : (ts && ts.iter >= 1000 ? 'Finished' : 'Play'); if (playing) requestAnimationFrame(loop); }
+  function loop() {
+    if (!playing) return;
+    const t0 = performance.now(); while (performance.now() - t0 < 14 && ts.iter < 1000) ts.step();
+    V.draw(); if (ts.iter % 10 < 5) report();
+    if (ts.iter >= 1000) { setPlaying(false); report(); for (let i = 0; i < 30; i++) V.draw(); return; }
+    requestAnimationFrame(loop);
+  }
+  $('#play5').addEventListener('click', () => { if (ts && ts.iter >= 1000) { build().then(() => setPlaying(true)); return; } setPlaying(!playing); });
+  $('#restart5').addEventListener('click', () => { playing = false; build().then(() => setPlaying(true)); });
+  $('#ds5').addEventListener('change', () => { build(); });
+  const rebuild = debounce(() => build(), 300);
+  $('#p5').addEventListener('input', e => { $('#p5o').textContent = e.target.value; rebuild(); });
+  V.onPick = i => { sel = sel === i ? -1 : i; hi(); V.draw(); report(); };
+  build();
+});
+
+/* heavy-tail chart */
+{
+  const svg = $('#k5'), sl = $('#d5');
+  const gk = x => Math.exp(-x * x / 2), tk = x => 1 / (1 + x * x);
+  kernelDraw = () => {
+    const W = svg.clientWidth, H = svg.clientHeight; if (!W) return;
+    const L = 46, R = 16, Tp = 18, Bm = 36, xm = 6, X = x => L + x / xm * (W - L - R), Y = y => Tp + (1 - y) * (H - Tp - Bm);
+    const path = f => { let s = ''; for (let i = 0; i <= 120; i++) { const x = i / 120 * xm; s += (i ? 'L' : 'M') + X(x).toFixed(1) + ' ' + Y(f(x)).toFixed(1); } return s; };
+    const dd = sl.value / 10, g = gk(dd), t = tk(dd), dt = g > 0 ? Math.sqrt(1 / g - 1) : Infinity;
+    const ticks = W < 520 ? [0, 2, 4, 6] : [0, 1, 2, 3, 4, 5, 6];
+    let s = `<g font-size="13" fill="${TK.muted}" font-family="Inter,sans-serif">` + ticks.map(x => `<text x="${X(x)}" y="${H - 14}" text-anchor="middle">${x}</text>`).join('') + `<text x="${L - 8}" y="${Y(1) + 4}" text-anchor="end">1</text><text x="${L - 8}" y="${Y(0) + 4}" text-anchor="end">0</text></g>`;
+    s += `<line x1="${L}" x2="${W - R}" y1="${Y(0)}" y2="${Y(0)}" stroke="${TK.line}"/>`;
+    s += `<path d="${path(gk)}" fill="none" stroke="${TK.path}" stroke-width="2.5"/><path d="${path(tk)}" fill="none" stroke="${TK.coral}" stroke-width="2.5"/>`;
+    s += `<line x1="${X(dd)}" x2="${X(dd)}" y1="${Y(1)}" y2="${Y(0)}" stroke="${TK.muted}" stroke-dasharray="3 4"/>`;
+    if (dt > dd + 0.05) { const xe = Math.min(dt, xm); s += `<line x1="${X(dd)}" x2="${X(xe)}" y1="${Y(g)}" y2="${Y(g)}" stroke="${TK.ink}" stroke-width="1.5" stroke-dasharray="5 4"/>`; if (dt <= xm) s += `<circle cx="${X(dt)}" cy="${Y(g)}" r="5" fill="${TK.coral}" stroke="${TK.ink}" stroke-width="1.5"/>`; }
+    s += `<circle cx="${X(dd)}" cy="${Y(g)}" r="5" fill="${TK.path}"/><circle cx="${X(dd)}" cy="${Y(t)}" r="5" fill="${TK.coral}"/>`;
+    s += `<g font-size="13.5" font-weight="600" font-family="Inter,sans-serif"><text x="${X(0.25)}" y="${Y(0.12)}" fill="${TK.path}" ${W < 520 ? 'display="none"' : ''}>Gaussian, original space</text><text x="${X(2.6)}" y="${Y(0.26)}" fill="${TK.coral}">Student-t, the map</text></g>`;
+    svg.innerHTML = s;
+    $('#d5o').textContent = dd.toFixed(1);
+    $('#k5c').innerHTML = `At distance ${dd.toFixed(1)}, the Gaussian similarity is ${g < 0.001 ? g.toExponential(1) : g.toFixed(3)} and the Student-t is ${t.toFixed(3)}. To match that Gaussian value on the map, the pair can sit ${dt === Infinity ? 'arbitrarily far' : `at distance ${dt.toFixed(1)}`}${dd > 0.3 && dt < Infinity ? `, ${(dt / dd).toFixed(1)}× further away` : ''}. That extra room relieves the <b>crowding problem</b>: in 2-D there isn't space for all of a point's moderately distant neighbours, so the heavy tail lets them spread out and opens gaps between clusters.`;
+  };
+  const kro = new ResizeObserver(kernelDraw); kro.observe(svg);
+  sl.addEventListener('input', kernelDraw);
+}
+
+/* ---------- lesson 6: comparison ---------- */
+whenVisible($('#compare'), () => {
+  const PANELS = [['in', 'Input'], ['mds', 'Classical MDS'], ['iso', 'Isomap, k = 10'], ['lle', 'LLE, k = 12'], ['tsne', 't-SNE, perplexity 30']];
+  $('#g6').innerHTML = PANELS.map(([id, nm]) => `<figure><div class="fig" id="f6${id}"><canvas id="c6${id}" ${id === 'in' ? 'tabindex="0"' : 'class="flat"'} aria-label="${nm}"></canvas><span class="busy">Working…</span></div><figcaption id="t6${id}">${nm}</figcaption></figure>`).join('');
+  const vin = View3D($('#c6in'), { size: 2 }), vs = {};
+  for (const [id] of PANELS.slice(1)) vs[id] = View2D($('#c6' + id), { size: 2.2, pad: 14 });
+  let token = 0;
+  async function run() {
+    const my = ++token, which = $('#ds6').value, noise = $('#n6').value / 10;
+    const d = which === 'roll' ? ML.swissRoll(500, noise, 7) : which === 'hole' ? ML.swissRoll(500, noise, 7, true) : which === 's' ? ML.sCurve(500, noise, 11) : ML.clusters(500, noise, 5);
+    const D2 = ML.sqdist(d.X), col = colorsOf(d);
+    vin.pts = d.X; vin.col = col; vin.draw();
+    $('#t6in').innerHTML = `Input: ${esc(d.name)}${d.kind === 'categorical' ? ', first three of ten coordinates' : ''}`;
+    for (const id in vs) { vs[id].pts = []; vs[id].draw(); $('#t6' + id).textContent = PANELS.find(p => p[0] === id)[1]; }
+    const jobs = { mds: () => ML.cmds(D2, 500).Y, iso: () => ML.isomap(d.X, 10, D2).Y, lle: () => ML.lle(d.X, 12, 1e-3, D2).Y, tsne: () => { const t = new ML.TSNE(d.X, 30, 3, D2); for (let i = 0; i < 500; i++) t.step(); return t.Y; } };
+    for (const [id, nm] of PANELS.slice(1)) {
+      busy(['#f6' + id], true); const t0 = performance.now();
+      const Y = await later(jobs[id]); if (my !== token) return;
+      const ms = performance.now() - t0, kept = ML.keptNeighbours(d.intr, Y);
+      busy(['#f6' + id], false); vs[id].pts = Y; vs[id].col = col; vs[id].draw();
+      $('#t6' + id).innerHTML = `${nm}: <b>${pct(kept)}</b> neighbours kept, ${ms < 1000 ? Math.round(ms) + ' ms' : (ms / 1000).toFixed(1) + ' s'}`;
+    }
+  }
+  $('#run6').addEventListener('click', run);
+  $('#ds6').addEventListener('change', run);
+  $('#n6').addEventListener('input', e => $('#n6o').textContent = (e.target.value / 10).toFixed(1));
+  $('#n6').addEventListener('change', run);
+  run();
+});
+}
+
+</script>
+</body>
+</html>
